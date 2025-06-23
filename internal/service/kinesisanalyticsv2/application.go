@@ -269,6 +269,102 @@ func resourceApplication() *schema.Resource {
 								},
 								ConflictsWith: []string{"application_configuration.0.sql_application_configuration"},
 							},
+							"zeppelin_application_configuration": {
+								Type:     schema.TypeList,
+								Optional: true,
+								Computed: true,
+								MaxItems: 1,
+								Elem: &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"catalog_configuration": {
+											Type:     schema.TypeList,
+											Optional: false,
+											Computed: false,
+											MaxItems: 1,
+											Elem: &schema.Resource{
+												Schema: map[string]*schema.Schema{
+													"glue_data_catalog_configuration": {
+														Type:     schema.TypeBool,
+														Optional: false,
+														Computed: false,
+														MaxItems: 1,
+														Elem: &schema.Resource{
+															Schema: map[string]*schema.Schema{
+																"database_arn": {
+																	Type:     schema.TypeString,
+																	Optional: false,
+																	Computed: false,
+																	MaxItems: 1,
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+										"monitoring_configuration": {
+											Type:     schema.TypeList,
+											Optional: true,
+											Computed: true,
+											MaxItems: 1,
+											Elem: &schema.Resource{
+												Schema: map[string]*schema.Schema{
+													"configuration_type": {
+														Type:             schema.TypeString,
+														Required:         true,
+														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](),
+													},
+													"log_level": {
+														Type:             schema.TypeString,
+														Optional:         true,
+														Computed:         true,
+														ValidateDiagFunc: enum.Validate[awstypes.LogLevel](),
+													},
+													"metrics_level": {
+														Type:             schema.TypeString,
+														Optional:         true,
+														Computed:         true,
+														ValidateDiagFunc: enum.Validate[awstypes.MetricsLevel](),
+													},
+												},
+											},
+										},
+										"parallelism_configuration": {
+											Type:     schema.TypeList,
+											Optional: true,
+											Computed: true,
+											MaxItems: 1,
+											Elem: &schema.Resource{
+												Schema: map[string]*schema.Schema{
+													"auto_scaling_enabled": {
+														Type:     schema.TypeBool,
+														Optional: true,
+														Computed: true,
+													},
+													"configuration_type": {
+														Type:             schema.TypeString,
+														Required:         true,
+														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](),
+													},
+													"parallelism": {
+														Type:         schema.TypeInt,
+														Optional:     true,
+														Computed:     true,
+														ValidateFunc: validation.IntAtLeast(1),
+													},
+													"parallelism_per_kpu": {
+														Type:         schema.TypeInt,
+														Optional:     true,
+														Computed:     true,
+														ValidateFunc: validation.IntAtLeast(1),
+													},
+												},
+											},
+										},
+									},
+								},
+								ConflictsWith: []string{"application_configuration.0.sql_application_configuration"},
+							},
 							"run_configuration": {
 								Type:     schema.TypeList,
 								Optional: true,
