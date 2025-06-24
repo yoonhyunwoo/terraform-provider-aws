@@ -302,29 +302,38 @@ func resourceApplication() *schema.Resource {
 												},
 											},
 										},
-										"monitoring_configuration": {
+										"custom_artifacts_configuration": {
 											Type:     schema.TypeList,
 											Optional: true,
 											Computed: true,
 											MaxItems: 1,
 											Elem: &schema.Resource{
 												Schema: map[string]*schema.Schema{
-													"configuration_type": {
+													"artifact_type": {
 														Type:             schema.TypeString,
 														Required:         true,
 														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](),
 													},
-													"log_level": {
-														Type:             schema.TypeString,
-														Optional:         true,
-														Computed:         true,
-														ValidateDiagFunc: enum.Validate[awstypes.LogLevel](),
-													},
-													"metrics_level": {
-														Type:             schema.TypeString,
-														Optional:         true,
-														Computed:         true,
-														ValidateDiagFunc: enum.Validate[awstypes.MetricsLevel](),
+													"maven_reference": {
+														Type:     schema.TypeList,
+														Optional: true,
+														Computed: true,
+														Elem: &schema.Resource{
+															Schema: map[string]*schema.Schema{
+																"group_id": {
+																	Type:     schema.TypeString,
+																	Required: true,
+																},
+																"artifact_id": {
+																	Type:     schema.TypeString,
+																	Required: true,
+																},
+																"version": {
+																	Type:         schema.TypeString,
+																	Required:     true,
+																	ValidateFunc: validation.IntAtLeast(1)},
+															},
+														},
 													},
 												},
 											},
