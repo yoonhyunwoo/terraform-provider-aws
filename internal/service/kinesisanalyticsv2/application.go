@@ -2035,6 +2035,59 @@ func expandApplicationConfiguration(vApplicationConfiguration []any) *awstypes.A
 		applicationConfiguration.FlinkApplicationConfiguration = flinkApplicationConfiguration
 	}
 
+	// 작업중
+	// Terraform Resource를 AWS 포맷에 맞게 Expand
+	if vZeppelinApplicationConfiguration, ok := mApplicationConfiguration["zeppelin_application_configuration"].([]any); ok && len(vZeppelinApplicationConfiguration) > 0 && vZeppelinApplicationConfiguration[0] != nil {
+		zeppelinApplicationConfiguration := &awstypes.ZeppelinApplicationConfiguration{}
+
+		mZeppelinApplicationConfiguration := vZeppelinApplicationConfiguration[0].(map[string]any)
+
+		if vCatalogConfiguration, ok := mZeppelinApplicationConfiguration["catalog_configuration"].([]any); true {
+			//catalogConfiguration := &awstypes.CatalogConfiguration{}
+			//mCatalogConfiguration := vCatalogConfiguration[0].(map[string]any)
+			fmt.Println(vCatalogConfiguration, ok)
+		}
+
+		if vCustomArtifactsConfiguration, ok := mZeppelinApplicationConfiguration["custom_artifacts_configuration"].([]any); true {
+			fmt.Println(vCustomArtifactsConfiguration, ok)
+		}
+
+		if vDeployAsApplicationConfiguration, ok := mZeppelinApplicationConfiguration["deploy_as_application_configuration"].([]any); true {
+			fmt.Println(vDeployAsApplicationConfiguration, ok)
+		}
+
+		if vMonitoringConfiguration, ok := mZeppelinApplicationConfiguration["monitoring_configuration"].([]any); true {
+			fmt.Println(vMonitoringConfiguration, ok)
+		}
+
+		//if vCheckpointConfiguration, ok := mZeppelinApplicationConfiguration["checkpoint_configuration"].([]any); ok && len(vCheckpointConfiguration) > 0 && vCheckpointConfiguration[0] != nil {
+		//	checkpointConfiguration := &awstypes.CheckpointConfiguration{}
+		//
+		//	mCheckpointConfiguration := vCheckpointConfiguration[0].(map[string]any)
+		//
+		//	if vConfigurationType, ok := mCheckpointConfiguration["configuration_type"].(string); ok && vConfigurationType != "" {
+		//		vConfigurationType := awstypes.ConfigurationType(vConfigurationType)
+		//		checkpointConfiguration.ConfigurationType = vConfigurationType
+		//
+		//		if vConfigurationType == awstypes.ConfigurationTypeCustom {
+		//			if vCheckpointingEnabled, ok := mCheckpointConfiguration["checkpointing_enabled"].(bool); ok {
+		//				checkpointConfiguration.CheckpointingEnabled = aws.Bool(vCheckpointingEnabled)
+		//			}
+		//			if vCheckpointInterval, ok := mCheckpointConfiguration["checkpoint_interval"].(int); ok {
+		//				checkpointConfiguration.CheckpointInterval = aws.Int64(int64(vCheckpointInterval))
+		//			}
+		//			if vMinPauseBetweenCheckpoints, ok := mCheckpointConfiguration["min_pause_between_checkpoints"].(int); ok {
+		//				checkpointConfiguration.MinPauseBetweenCheckpoints = aws.Int64(int64(vMinPauseBetweenCheckpoints))
+		//			}
+		//		}
+		//	}
+		//
+		//	flinkApplicationConfiguration.CheckpointConfiguration = checkpointConfiguration
+		//}
+
+		applicationConfiguration.ZeppelinApplicationConfiguration = zeppelinApplicationConfiguration
+	}
+
 	if vSqlApplicationConfiguration, ok := mApplicationConfiguration["sql_application_configuration"].([]any); ok && len(vSqlApplicationConfiguration) > 0 && vSqlApplicationConfiguration[0] != nil {
 		sqlApplicationConfiguration := &awstypes.SqlApplicationConfiguration{}
 
