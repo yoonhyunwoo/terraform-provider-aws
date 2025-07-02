@@ -2043,21 +2043,39 @@ func expandApplicationConfiguration(vApplicationConfiguration []any) *awstypes.A
 		mZeppelinApplicationConfiguration := vZeppelinApplicationConfiguration[0].(map[string]any)
 
 		if vCatalogConfiguration, ok := mZeppelinApplicationConfiguration["catalog_configuration"].([]any); true {
-			//catalogConfiguration := &awstypes.CatalogConfiguration{}
+			catalogConfiguration := &awstypes.CatalogConfiguration{}
 			//mCatalogConfiguration := vCatalogConfiguration[0].(map[string]any)
-			fmt.Println(vCatalogConfiguration, ok)
+			fmt.Println(catalogConfiguration, vCatalogConfiguration, ok)
 		}
 
 		if vCustomArtifactsConfiguration, ok := mZeppelinApplicationConfiguration["custom_artifacts_configuration"].([]any); true {
-			fmt.Println(vCustomArtifactsConfiguration, ok)
+			customArtifactConfiguration := &awstypes.CustomArtifactConfiguration{}
+			fmt.Println(vCustomArtifactsConfiguration, customArtifactConfiguration, ok)
 		}
 
 		if vDeployAsApplicationConfiguration, ok := mZeppelinApplicationConfiguration["deploy_as_application_configuration"].([]any); true {
-			fmt.Println(vDeployAsApplicationConfiguration, ok)
+			deployAsApplicationConfiguration := &awstypes.DeployAsApplicationConfiguration{}
+			fmt.Println(vDeployAsApplicationConfiguration, deployAsApplicationConfiguration, ok)
 		}
 
-		if vMonitoringConfiguration, ok := mZeppelinApplicationConfiguration["monitoring_configuration"].([]any); true {
-			fmt.Println(vMonitoringConfiguration, ok)
+		// 조건문 추가 필요
+		if vMonitoringConfiguration, ok := mZeppelinApplicationConfiguration["monitoring_configuration"].([]any); ok {
+
+			monitoringConfiguration := &awstypes.ZeppelinMonitoringConfiguration{}
+			if mMonitoringConfiguration, ok := vMonitoringConfiguration[0].(map[string]any); ok {
+				// 해당 value들 쓰이는지 조사 필요
+				//vConfigurationType := awstypes.ConfigurationType(mMonitoringConfiguration["configuration_type"].(string))
+				//vMetricsLevel := awstypes.MetricsLevel(mMonitoringConfiguration["metrics_level"].(string))
+
+				//monitoringConfiguration. = vConfigurationType
+				//monitoringConfiguration.MetricsLevel = vMetricsLevel
+				// ---
+				vLogLevel := awstypes.LogLevel(mMonitoringConfiguration["log_level"].(string))
+				monitoringConfiguration.LogLevel = vLogLevel
+
+			}
+
+			zeppelinApplicationConfiguration.MonitoringConfiguration = monitoringConfiguration
 		}
 
 		//if vCheckpointConfiguration, ok := mZeppelinApplicationConfiguration["checkpoint_configuration"].([]any); ok && len(vCheckpointConfiguration) > 0 && vCheckpointConfiguration[0] != nil {
