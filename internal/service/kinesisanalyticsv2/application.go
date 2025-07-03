@@ -1093,6 +1093,13 @@ func resourceApplicationUpdate(ctx context.Context, d *schema.ResourceData, meta
 				updateApplication = true
 			}
 
+			// 작업중
+			if d.HasChange("application_configuration.0.zeppelin_application_configuration") {
+				applicationConfigurationUpdate.ZeppelinApplicationConfigurationUpdate = expandApplicationZeppelinApplicationConfigurationUpdate(d.Get("application_configuration.0.zeppelin_application_configuration").([]any))
+
+				updateApplication = true
+			}
+
 			if d.HasChange("application_configuration.0.sql_application_configuration") {
 				sqlApplicationConfigurationUpdate := &awstypes.SqlApplicationConfigurationUpdate{}
 
@@ -2106,6 +2113,10 @@ func expandApplicationConfiguration(vApplicationConfiguration []any) *awstypes.A
 		applicationConfiguration.ZeppelinApplicationConfiguration = zeppelinApplicationConfiguration
 	}
 
+	if vZeppelinApplicationConfiguration, ok := mApplicationConfiguration["zeppelin_application_configuration"].([]any); ok && len(vZeppelinApplicationConfiguration) > 0 && vZeppelinApplicationConfiguration[0] != nil {
+
+	}
+
 	if vSqlApplicationConfiguration, ok := mApplicationConfiguration["sql_application_configuration"].([]any); ok && len(vSqlApplicationConfiguration) > 0 && vSqlApplicationConfiguration[0] != nil {
 		sqlApplicationConfiguration := &awstypes.SqlApplicationConfiguration{}
 
@@ -2261,6 +2272,13 @@ func expandApplicationFlinkApplicationConfigurationUpdate(vFlinkApplicationConfi
 	}
 
 	return flinkApplicationConfigurationUpdate
+}
+
+// 작업중
+func expandApplicationZeppelinApplicationConfigurationUpdate(vZeppelinApplicationConfiguration []any) *awstypes.ZeppelinApplicationConfigurationUpdate {
+	zeppelinApplicationConfigurationUpdate := &awstypes.ZeppelinApplicationConfigurationUpdate{}
+
+	return zeppelinApplicationConfigurationUpdate
 }
 
 func expandApplicationSnapshotConfigurationUpdate(vApplicationSnapshotConfiguration []any) *awstypes.ApplicationSnapshotConfigurationUpdate {
@@ -2954,6 +2972,11 @@ func flattenApplicationConfigurationDescription(applicationConfigurationDescript
 		mApplicationConfiguration["flink_application_configuration"] = []any{mFlinkApplicationConfiguration}
 	}
 
+	// 작업중
+	if ZeppelinApplicationConfigurationDescription := applicationConfigurationDescription.ZeppelinApplicationConfigurationDescription; ZeppelinApplicationConfigurationDescription != nil {
+
+	}
+
 	if runConfigurationDescription := applicationConfigurationDescription.RunConfigurationDescription; runConfigurationDescription != nil {
 		mRunConfiguration := map[string]any{}
 
@@ -3261,6 +3284,16 @@ func expandStartApplicationInput(d *schema.ResourceData) *kinesisanalyticsv2.Sta
 					}
 				}
 			}
+
+			// 작업중
+			if v, ok := tfMap["zeppelin_application_configuration"].([]any); ok {
+				tfMap := v[0].(map[string]any)
+
+				if v, ok := tfMap[]; ok {
+					fmt.Println(v)
+				}
+			}
+
 		}
 	}
 
