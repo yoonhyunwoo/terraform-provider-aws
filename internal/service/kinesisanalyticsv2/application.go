@@ -272,29 +272,26 @@ func resourceApplication() *schema.Resource {
 							"zeppelin_application_configuration": {
 								Type:     schema.TypeList,
 								Optional: true,
-								Computed: true,
 								MaxItems: 1,
 								Elem: &schema.Resource{
 									Schema: map[string]*schema.Schema{
+
+										// CatalogConfiguration
 										"catalog_configuration": {
 											Type:     schema.TypeList,
-											Optional: false,
-											Computed: false,
+											Optional: true,
 											MaxItems: 1,
 											Elem: &schema.Resource{
 												Schema: map[string]*schema.Schema{
 													"glue_data_catalog_configuration": {
-														Type:     schema.TypeBool,
-														Optional: false,
-														Computed: false,
+														Type:     schema.TypeList,
+														Optional: true,
 														MaxItems: 1,
 														Elem: &schema.Resource{
 															Schema: map[string]*schema.Schema{
 																"database_arn": {
 																	Type:     schema.TypeString,
-																	Optional: false,
-																	Computed: false,
-																	MaxItems: 1,
+																	Required: true,
 																},
 															},
 														},
@@ -302,22 +299,23 @@ func resourceApplication() *schema.Resource {
 												},
 											},
 										},
+
+										// CustomArtifactsConfiguration
 										"custom_artifacts_configuration": {
 											Type:     schema.TypeList,
 											Optional: true,
-											Computed: true,
-											MaxItems: 1,
+											MaxItems: 50, // CloudFormation spec 기준
 											Elem: &schema.Resource{
 												Schema: map[string]*schema.Schema{
 													"artifact_type": {
 														Type:             schema.TypeString,
 														Required:         true,
-														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](),
+														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](), // DEBUG | INFO | etc.
 													},
 													"maven_reference": {
 														Type:     schema.TypeList,
 														Optional: true,
-														Computed: true,
+														MaxItems: 1,
 														Elem: &schema.Resource{
 															Schema: map[string]*schema.Schema{
 																"group_id": {
@@ -329,50 +327,68 @@ func resourceApplication() *schema.Resource {
 																	Required: true,
 																},
 																"version": {
-																	Type:         schema.TypeString,
-																	Required:     true,
-																	ValidateFunc: validation.IntAtLeast(1)},
+																	Type:     schema.TypeString,
+																	Required: true,
+																	// Optional: add a semantic version validator if needed
+																},
 															},
 														},
 													},
 												},
 											},
 										},
-										"parallelism_configuration": {
+
+										// DeployAsApplicationConfiguration
+										"deploy_as_application_configuration": {
 											Type:     schema.TypeList,
 											Optional: true,
-											Computed: true,
 											MaxItems: 1,
 											Elem: &schema.Resource{
 												Schema: map[string]*schema.Schema{
-													"auto_scaling_enabled": {
-														Type:     schema.TypeBool,
+													"s3_content_location": {
+														Type:     schema.TypeList,
+														Required: true,
+														MaxItems: 1,
+														Elem: &schema.Resource{
+															Schema: map[string]*schema.Schema{
+																"bucket_arn": {
+																	Type:     schema.TypeString,
+																	Required: true,
+																},
+																"base_path": {
+																	Type:     schema.TypeString,
+																	Required: true,
+																},
+																"file_key": {
+																	Type:     schema.TypeString,
+																	Required: true,
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+
+										// MonitoringConfiguration
+										"monitoring_configuration": {
+											Type:     schema.TypeList,
+											Optional: true,
+											MaxItems: 1,
+											Elem: &schema.Resource{
+												Schema: map[string]*schema.Schema{
+													"log_level": {
+														Type:     schema.TypeString,
 														Optional: true,
-														Computed: true,
-													},
-													"configuration_type": {
-														Type:             schema.TypeString,
-														Required:         true,
-														ValidateDiagFunc: enum.Validate[awstypes.ConfigurationType](),
-													},
-													"parallelism": {
-														Type:         schema.TypeInt,
-														Optional:     true,
-														Computed:     true,
-														ValidateFunc: validation.IntAtLeast(1),
-													},
-													"parallelism_per_kpu": {
-														Type:         schema.TypeInt,
-														Optional:     true,
-														Computed:     true,
-														ValidateFunc: validation.IntAtLeast(1),
+														ValidateFunc: validation.StringInSlice([]string{
+															"DEBUG", "INFO", "WARN", "ERROR",
+														}, false),
 													},
 												},
 											},
 										},
 									},
 								},
-								ConflictsWith: []string{"application_configuration.0.sql_application_configuration"},
 							},
 							"run_configuration": {
 								Type:     schema.TypeList,
@@ -2276,9 +2292,85 @@ func expandApplicationFlinkApplicationConfigurationUpdate(vFlinkApplicationConfi
 
 // 작업중
 func expandApplicationZeppelinApplicationConfigurationUpdate(vZeppelinApplicationConfiguration []any) *awstypes.ZeppelinApplicationConfigurationUpdate {
-	zeppelinApplicationConfigurationUpdate := &awstypes.ZeppelinApplicationConfigurationUpdate{}
+	if len(vZeppelinApplicationConfiguration) == 0 {
+		return nil
+	}
 
-	return zeppelinApplicationConfigurationUpdate
+	result := &awstypes.ZeppelinApplicationConfigurationUpdate{}
+	m := vZeppelinApplicationConfiguration[0].(map[string]interface{})
+
+	// 1. CatalogConfiguration
+	if v, ok := m["catalog_configuration"].([]interface{}); ok && len(v) > 0 {
+		if catalogMap, ok := v[0].(map[string]interface{}); ok {
+			if glueList, ok := catalogMap["glue_data_catalog_configuration"].([]interface{}); ok && len(glueList) > 0 {
+				if glueMap, ok := glueList[0].(map[string]interface{}); ok {
+					if arn, ok := glueMap["database_arn"].(string); ok {
+						result.CatalogConfigurationUpdate = &awstypes.CatalogConfigurationUpdate{
+							GlueDataCatalogConfigurationUpdate: &awstypes.GlueDataCatalogConfigurationUpdate{
+								DatabaseARNUpdate: aws.String(arn),
+							},
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 2. CustomArtifactsConfiguration
+	if v, ok := m["custom_artifacts_configuration"].([]interface{}); ok && len(v) > 0 {
+		var artifacts []awstypes.CustomArtifactConfiguration
+		for _, item := range v {
+			if itemMap, ok := item.(map[string]interface{}); ok {
+				artifact := awstypes.CustomArtifactConfiguration{}
+
+				if t, ok := itemMap["artifact_type"].(string); ok {
+					artifact.ArtifactType = awstypes.ArtifactType(t)
+				}
+
+				if mavenRefList, ok := itemMap["maven_reference"].([]interface{}); ok && len(mavenRefList) > 0 {
+					if mavenRefMap, ok := mavenRefList[0].(map[string]interface{}); ok {
+						artifact.MavenReference = &awstypes.MavenReference{
+							GroupId:    aws.String(mavenRefMap["group_id"].(string)),
+							ArtifactId: aws.String(mavenRefMap["artifact_id"].(string)),
+							Version:    aws.String(mavenRefMap["version"].(string)),
+						}
+					}
+				}
+
+				artifacts = append(artifacts, artifact)
+			}
+		}
+		result.CustomArtifactsConfigurationUpdate = artifacts
+	}
+
+	// 3. DeployAsApplicationConfiguration
+	if v, ok := m["deploy_as_application_configuration"].([]interface{}); ok && len(v) > 0 {
+		if deployMap, ok := v[0].(map[string]interface{}); ok {
+			if s3List, ok := deployMap["s3_content_location"].([]interface{}); ok && len(s3List) > 0 {
+				if s3Map, ok := s3List[0].(map[string]interface{}); ok {
+					result.DeployAsApplicationConfigurationUpdate = &awstypes.DeployAsApplicationConfigurationUpdate{
+						S3ContentLocationUpdate: &awstypes.S3ContentBaseLocationUpdate{
+							BucketARNUpdate: aws.String(s3Map["bucket_arn"].(string)),
+							BasePathUpdate:  aws.String(s3Map["base_path"].(string)),
+						},
+					}
+				}
+			}
+		}
+	}
+
+	// 4. MonitoringConfiguration
+	if v, ok := m["monitoring_configuration"].([]interface{}); ok && len(v) > 0 {
+		if monitorMap, ok := v[0].(map[string]interface{}); ok {
+			if logLevel, ok := monitorMap["log_level"].(string); ok {
+				result.MonitoringConfigurationUpdate = &awstypes.ZeppelinMonitoringConfigurationUpdate{
+					LogLevelUpdate: awstypes.LogLevel(logLevel),
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func expandApplicationSnapshotConfigurationUpdate(vApplicationSnapshotConfiguration []any) *awstypes.ApplicationSnapshotConfigurationUpdate {
@@ -2974,7 +3066,27 @@ func flattenApplicationConfigurationDescription(applicationConfigurationDescript
 
 	// 작업중
 	if ZeppelinApplicationConfigurationDescription := applicationConfigurationDescription.ZeppelinApplicationConfigurationDescription; ZeppelinApplicationConfigurationDescription != nil {
+		mZeppelinApplicationConfiguration := map[string]any{}
 
+		//catalog_configuration
+		if catalogConfiguration := ZeppelinApplicationConfigurationDescription.CatalogConfigurationDescription; catalogConfiguration != nil {
+
+		}
+		//custom_artifacts_configuration
+		if customArtifactsConfigurationDescription := ZeppelinApplicationConfigurationDescription.CustomArtifactsConfigurationDescription; customArtifactsConfigurationDescription != nil {
+
+		}
+		//deploy_as_application_configuration
+		if deployAsApplicationConfigurationDescription := ZeppelinApplicationConfigurationDescription.DeployAsApplicationConfigurationDescription; deployAsApplicationConfigurationDescription != nil {
+
+		}
+
+		//monitoring_configuration
+		if monitoringConfigurationDescription := ZeppelinApplicationConfigurationDescription.MonitoringConfigurationDescription; monitoringConfigurationDescription != nil {
+
+		}
+
+		mApplicationConfiguration["zeppelin_application_configuration"] = mZeppelinApplicationConfiguration
 	}
 
 	if runConfigurationDescription := applicationConfigurationDescription.RunConfigurationDescription; runConfigurationDescription != nil {
